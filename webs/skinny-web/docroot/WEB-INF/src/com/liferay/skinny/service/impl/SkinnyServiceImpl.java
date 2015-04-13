@@ -14,10 +14,9 @@
 
 package com.liferay.skinny.service.impl;
 
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONSerializer;
+import com.liferay.portal.kernel.util.*;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -29,7 +28,10 @@ import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portlet.dynamicdatalists.model.DDLRecord;
 import com.liferay.portlet.dynamicdatalists.model.DDLRecordSet;
 import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
+import com.liferay.portlet.dynamicdatamapping.storage.Field;
+import com.liferay.portlet.dynamicdatamapping.storage.FieldConstants;
 import com.liferay.portlet.dynamicdatamapping.storage.Fields;
+import com.liferay.portlet.dynamicdatamapping.storage.StorageEngineUtil;
 import com.liferay.portlet.journal.NoSuchArticleException;
 import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.skinny.model.SkinnyDDLRecord;
@@ -40,10 +42,7 @@ import java.io.Serializable;
 
 import java.text.Format;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author James Falkner
@@ -69,7 +68,7 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 				ddlRecordSet.getRecordSetId(), ActionKeys.VIEW)) {
 
 			for (DDLRecord ddlRecord : ddlRecordSet.getRecords()) {
-				SkinnyDDLRecord skinnyDDLRecord = getSkinnyDDLRecord(ddlRecord);
+				SkinnyDDLRecord skinnyDDLRecord = getSkinnyDDLRecord(ddlRecord, ddlRecordSet.getDDMStructure());
 
 				skinnyDDLRecords.add(skinnyDDLRecord);
 			}
@@ -131,58 +130,103 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 		return skinnyJournalArticles;
 	}
 
-	protected SkinnyDDLRecord getSkinnyDDLRecord(DDLRecord ddlRecord)
+	protected SkinnyDDLRecord getSkinnyDDLRecord(DDLRecord ddlRecord, DDMStructure ddmStructure)
 		throws Exception {
 
 		SkinnyDDLRecord skinnyDDLRecord = new SkinnyDDLRecord();
+		skinnyDDLRecord.setUuid(ddlRecord.getUuid());
 
-		skinnyDDLRecord.addDynamicElement("uuid", ddlRecord.getUuid());
-
-		Fields fields = ddlRecord.getFields();
-
-		for (String fieldName : fields.getNames()) {
-			String fieldValueString = StringPool.BLANK;
-
-			String fieldDataType = GetterUtil.getString(
-				ddlRecord.getFieldDataType(fieldName));
-
-			Serializable fieldValue = ddlRecord.getFieldValue(fieldName);
-
-			if (fieldDataType.equals("boolean")) {
-				boolean booleanValue = GetterUtil.getBoolean(fieldValue);
-
-				fieldValueString = String.valueOf(booleanValue);
-			}
-			else if (fieldDataType.equals("date")) {
-				fieldValueString = _format.format(fieldValue);
-			}
-			else if (fieldDataType.equals("double")) {
-				double doubleValue = GetterUtil.getDouble(fieldValue);
-
-				fieldValueString = String.valueOf(doubleValue);
-			}
-			else if (fieldDataType.equals("integer") ||
-					 fieldDataType.equals("number")) {
-
-				int intValue = GetterUtil.getInteger(fieldValue);
-
-				fieldValueString = String.valueOf(intValue);
-			}
-			else {
-				fieldValueString = GetterUtil.getString(fieldValue);
+		for (String fieldName : ddmStructure.getFieldNames()) {
+			if (ddmStructure.isFieldPrivate(fieldName)) {
+				continue;
 			}
 
-			skinnyDDLRecord.addDynamicElement(fieldName, fieldValueString);
+			if (Validator.isNotNull(ddmStructure.getFieldProperty(fieldName, "_parentName_"))) {
+				continue;
+			}
+
+			Field field = ddlRecord.getField(fieldName);
+			skinnyDDLRecord.addField(getFieldObject(fieldName, field, ddlRecord, ddmStructure));
 		}
 
 		return skinnyDDLRecord;
 	}
+
+	protected Map<String, Object> getFieldObject(String fieldName, Field field, DDLRecord ddlRecord, DDMStructure ddmStructure) throws Exception {
+
+		Map<String, Object> fieldObj = new HashMap<String, Object>();
+
+		fieldObj.put("name", fieldName);
+		fieldObj.put("value", getFieldValue(field));
+		fieldObj.put("children", getFieldChildren(fieldName, field, ddlRecord, ddmStructure));
+		return fieldObj;
+	}
+
+	protected List<Object> getFieldChildren(String fieldName, Field field, DDLRecord ddlRecord, DDMStructure ddmStructure) throws Exception {
+		List<Object> children = new ArrayList<Object>();
+
+		for (String childFieldName: ddmStructure.getChildrenFieldNames(fieldName)) {
+			Field childField = ddlRecord.getField(childFieldName);
+			children.add(getFieldObject(childFieldName, childField, ddlRecord, ddmStructure));
+		}
+
+		return children;
+	}
+
+	protected Object getFieldValue(Field field) throws Exception {
+
+		String fieldDataType = GetterUtil.getString(field.getDataType());
+
+		if (!field.isRepeatable()) {
+			return getStringValue(fieldDataType, field.getValue());
+		}
+
+		List<Object> vals = new ArrayList<Object>();
+		for (Serializable value : field.getValues(Locale.getDefault())) {
+			vals.add(value);
+		}
+
+		return vals;
+	}
+
+	protected String getStringValue(String fieldDataType, Serializable fieldValue) {
+
+		String fieldValueString = StringPool.BLANK;
+
+		if (fieldDataType.equals("boolean")) {
+			boolean booleanValue = GetterUtil.getBoolean(fieldValue);
+
+			fieldValueString = String.valueOf(booleanValue);
+		}
+		else if (fieldDataType.equals("date")) {
+			fieldValueString = _format.format(fieldValue);
+		}
+		else if (fieldDataType.equals("double")) {
+			double doubleValue = GetterUtil.getDouble(fieldValue);
+
+			fieldValueString = String.valueOf(doubleValue);
+		}
+		else if (fieldDataType.equals("integer") ||
+				fieldDataType.equals("number")) {
+
+			int intValue = GetterUtil.getInteger(fieldValue);
+
+			fieldValueString = String.valueOf(intValue);
+		}
+		else {
+			fieldValueString = GetterUtil.getString(fieldValue);
+		}
+		return fieldValueString;
+	}
+
 
 	protected SkinnyJournalArticle getSkinnyJournalArticle(
 			JournalArticle journalArticle, String locale)
 		throws Exception {
 
 		SkinnyJournalArticle skinnyJournalArticle = new SkinnyJournalArticle();
+
+		skinnyJournalArticle.setUuid(journalArticle.getUuid());
 
 		String content = null;
 
@@ -215,9 +259,10 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 					"dynamic-content");
 
 				if (dynamicElementElement != null) {
-					skinnyJournalArticle.addDynamicElement(
-						element.attributeValue("name"),
-						dynamicElementElement.getTextTrim());
+					Map<String, Object> field = new HashMap<String, Object>();
+					field.put("name", element.attributeValue("name"));
+					field.put("value", dynamicElementElement.getTextTrim());
+					skinnyJournalArticle.addField(field);
 				}
 			}
 			else {
