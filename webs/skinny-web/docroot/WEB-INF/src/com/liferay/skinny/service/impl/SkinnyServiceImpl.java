@@ -14,12 +14,11 @@
 
 package com.liferay.skinny.service.impl;
 
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONSerializer;
 import com.liferay.portal.kernel.util.*;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.kernel.xml.Node;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.security.ac.AccessControlled;
@@ -29,9 +28,6 @@ import com.liferay.portlet.dynamicdatalists.model.DDLRecord;
 import com.liferay.portlet.dynamicdatalists.model.DDLRecordSet;
 import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
 import com.liferay.portlet.dynamicdatamapping.storage.Field;
-import com.liferay.portlet.dynamicdatamapping.storage.FieldConstants;
-import com.liferay.portlet.dynamicdatamapping.storage.Fields;
-import com.liferay.portlet.dynamicdatamapping.storage.StorageEngineUtil;
 import com.liferay.portlet.journal.NoSuchArticleException;
 import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.skinny.model.SkinnyDDLRecord;
@@ -39,9 +35,7 @@ import com.liferay.skinny.model.SkinnyJournalArticle;
 import com.liferay.skinny.service.base.SkinnyServiceBaseImpl;
 
 import java.io.Serializable;
-
 import java.text.Format;
-
 import java.util.*;
 
 /**
@@ -131,7 +125,7 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 	}
 
 	protected SkinnyDDLRecord getSkinnyDDLRecord(DDLRecord ddlRecord, DDMStructure ddmStructure)
-		throws Exception {
+			throws Exception {
 
 		SkinnyDDLRecord skinnyDDLRecord = new SkinnyDDLRecord();
 		skinnyDDLRecord.setUuid(ddlRecord.getUuid());
@@ -249,27 +243,40 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 	protected void populateSkinnyJournalArticle(
 		SkinnyJournalArticle skinnyJournalArticle, Element parentElement) {
 
-		List<Element> elements = parentElement.elements();
-
-		for (Element element : elements) {
-			String elementName = element.getName();
-
-			if (elementName.equals("dynamic-element")) {
-				Element dynamicElementElement = element.element(
-					"dynamic-content");
-
-				if (dynamicElementElement != null) {
-					Map<String, Object> field = new HashMap<String, Object>();
-					field.put("name", element.attributeValue("name"));
-					field.put("value", dynamicElementElement.getTextTrim());
-					skinnyJournalArticle.addField(field);
-				}
-			}
-			else {
-				populateSkinnyJournalArticle(skinnyJournalArticle, element);
-			}
+		for (Map<String, Object> field : getNodeObjects(parentElement)) {
+			skinnyJournalArticle.addField(field);
 		}
 	}
+
+
+	protected List<Map<String, Object>> getNodeObjects(Element parent)  {
+
+		List<Map<String, Object>> children = new ArrayList<Map<String, Object>>();
+		for (Node child : parent.selectNodes("dynamic-element")) {
+			children.add(getNodeObject((Element)child));
+		}
+		return children;
+
+
+
+	}
+	protected Map<String, Object> getNodeObject(Element element)  {
+
+		Map<String, Object> fieldObj = new HashMap<String, Object>();
+
+		fieldObj.put("name", element.attributeValue("name"));
+		fieldObj.put("value", element.element("dynamic-content").getTextTrim());
+
+		List<Map<String, Object>> children = new ArrayList<Map<String, Object>>();
+
+		for (Node child: element.selectNodes("dynamic-element")) {
+			children.add(getNodeObject((Element)child));
+		}
+
+		fieldObj.put("children", children);
+		return fieldObj;
+	}
+
 
 	private Format _format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 		"yyyy-MM-dd");
