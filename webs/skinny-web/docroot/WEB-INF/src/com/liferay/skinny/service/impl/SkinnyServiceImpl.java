@@ -14,7 +14,10 @@
 
 package com.liferay.skinny.service.impl;
 
-import com.liferay.portal.kernel.util.*;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -27,7 +30,7 @@ import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portlet.dynamicdatalists.model.DDLRecord;
 import com.liferay.portlet.dynamicdatalists.model.DDLRecordSet;
 import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
-import com.liferay.portlet.dynamicdatamapping.storage.Field;
+import com.liferay.portlet.dynamicdatamapping.storage.Fields;
 import com.liferay.portlet.journal.NoSuchArticleException;
 import com.liferay.portlet.journal.model.JournalArticle;
 import com.liferay.skinny.model.SkinnyDDLRecord;
@@ -36,7 +39,13 @@ import com.liferay.skinny.service.base.SkinnyServiceBaseImpl;
 
 import java.io.Serializable;
 import java.text.Format;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author James Falkner
@@ -55,7 +64,7 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 		PermissionChecker permissionChecker = getPermissionChecker();
 
 		DDLRecordSet ddlRecordSet = ddlRecordSetLocalService.getRecordSet(
-			ddlRecordSetId);
+				ddlRecordSetId);
 
 		if (permissionChecker.hasPermission(
 				ddlRecordSet.getGroupId(), DDLRecordSet.class.getName(),
@@ -84,7 +93,7 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 		Group group = groupLocalService.getGroup(companyId, groupName);
 
 		DDMStructure ddmStructure = ddmStructureLocalService.getDDMStructure(
-			ddmStructureId);
+				ddmStructureId);
 
 		Set<String> journalArticleIds = new HashSet<String>();
 
@@ -130,57 +139,57 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 		SkinnyDDLRecord skinnyDDLRecord = new SkinnyDDLRecord();
 		skinnyDDLRecord.setUuid(ddlRecord.getUuid());
 
-		for (String fieldName : ddmStructure.getFieldNames()) {
-			if (ddmStructure.isFieldPrivate(fieldName)) {
-				continue;
-			}
-
-			if (Validator.isNotNull(ddmStructure.getFieldProperty(fieldName, "_parentName_"))) {
-				continue;
-			}
-
-			Field field = ddlRecord.getField(fieldName);
-			skinnyDDLRecord.addField(getFieldObject(fieldName, field, ddlRecord, ddmStructure));
-		}
+		populateSkinnyDDLRecord(skinnyDDLRecord, ddmStructure, ddlRecord.getFields());
 
 		return skinnyDDLRecord;
 	}
 
-	protected Map<String, Object> getFieldObject(String fieldName, Field field, DDLRecord ddlRecord, DDMStructure ddmStructure) throws Exception {
 
-		Map<String, Object> fieldObj = new HashMap<String, Object>();
-
-		fieldObj.put("name", fieldName);
-		fieldObj.put("value", getFieldValue(field));
-		fieldObj.put("children", getFieldChildren(fieldName, field, ddlRecord, ddmStructure));
-		return fieldObj;
-	}
-
-	protected List<Object> getFieldChildren(String fieldName, Field field, DDLRecord ddlRecord, DDMStructure ddmStructure) throws Exception {
-		List<Object> children = new ArrayList<Object>();
-
-		for (String childFieldName: ddmStructure.getChildrenFieldNames(fieldName)) {
-			Field childField = ddlRecord.getField(childFieldName);
-			children.add(getFieldObject(childFieldName, childField, ddlRecord, ddmStructure));
+	protected void populateSkinnyDDLRecord(SkinnyDDLRecord skinnyDDLRecord, DDMStructure ddmStructure, Fields fields) throws Exception {
+		String rawDisplayFieldsValue = (String) fields.get("_fieldsDisplay").getValue();
+		String[] rawDisplayFields = rawDisplayFieldsValue.split(",");
+		List<Occurrence> occurrences = new ArrayList<Occurrence>(rawDisplayFields.length);
+		Map<String, Integer> fieldCounts = new HashMap<String, Integer>();
+		for (String instanceFieldName : rawDisplayFields) {
+			String fieldName = instanceFieldName.replaceAll("_INSTANCE_.*$", "");
+			Integer count = fieldCounts.get(fieldName);
+			if (count == null) {
+				occurrences.add(new Occurrence(fieldName, 0));
+				fieldCounts.put(fieldName, 0);
+			} else {
+				occurrences.add(new Occurrence(fieldName, count + 1));
+				fieldCounts.put(fieldName, count + 1);
+			}
 		}
 
-		return children;
-	}
-
-	protected Object getFieldValue(Field field) throws Exception {
-
-		String fieldDataType = GetterUtil.getString(field.getDataType());
-
-		if (!field.isRepeatable()) {
-			return getStringValue(fieldDataType, field.getValue());
+		Map<String, List<Map<String, Object>>> targets = new HashMap<String, List<Map<String, Object>>>();
+		List<Map<String, Object>> rootFieldOccurrences = new ArrayList<Map<String, Object>>();
+		for (String rootFieldName : ddmStructure.getRootFieldNames()) {
+			targets.put(rootFieldName, rootFieldOccurrences);
 		}
 
-		List<Object> vals = new ArrayList<Object>();
-		for (Serializable value : field.getValues(Locale.getDefault())) {
-			vals.add(value);
+		for (Occurrence occurrence : occurrences) {
+			String fieldName = occurrence.name;
+			Map<String, Object> field = new HashMap<String, Object>();
+			field.put("name", fieldName);
+			field.put("value", getStringValue(fields.get(fieldName).getType(),
+					fields.get(fieldName).getValue(Locale.getDefault(), occurrence.index)));
+
+			List<String> childrenFieldNames = ddmStructure.getChildrenFieldNames(fieldName);
+			if (!childrenFieldNames.isEmpty()) {
+				List<Map<String, Object>> children = new ArrayList<Map<String, Object>>();
+				field.put("children", children);
+
+				for (String childFieldName : childrenFieldNames) {
+					targets.put(childFieldName, children);
+				}
+			}
+			targets.get(fieldName).add(field);
 		}
 
-		return vals;
+		for (Map<String, Object> rootFieldOccurrence : rootFieldOccurrences) {
+			skinnyDDLRecord.addField(rootFieldOccurrence);
+		}
 	}
 
 	protected String getStringValue(String fieldDataType, Serializable fieldValue) {
@@ -280,5 +289,16 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 
 	private Format _format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 		"yyyy-MM-dd");
+
+	protected class Occurrence {
+
+		Occurrence(String name, int index) {
+			this.name = name;
+			this.index = index;
+		}
+
+		final String name;
+		final int index;
+	}
 
 }
