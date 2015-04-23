@@ -221,6 +221,7 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 		SkinnyJournalArticle skinnyJournalArticle = new SkinnyJournalArticle();
 
 		skinnyJournalArticle.setUuid(journalArticle.getUuid());
+		skinnyJournalArticle.setTitle(journalArticle.getTitle(locale));
 
 		String content = null;
 

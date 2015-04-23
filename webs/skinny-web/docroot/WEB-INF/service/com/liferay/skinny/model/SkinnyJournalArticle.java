@@ -18,4 +18,15 @@ package com.liferay.skinny.model;
  * @author James Falkner
  */
 public class SkinnyJournalArticle extends SkinnyBaseModel {
+
+    public void setTitle(String title) {
+        this._title = title;
+    }
+
+    public String getTitle() {
+        return _title;
+    }
+
+    private String _title;
+
 }
