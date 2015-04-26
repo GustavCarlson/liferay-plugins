@@ -71,6 +71,40 @@ public class SkinnyServiceImpl extends SkinnyServiceBaseImpl {
 		return skinnyDDLRecords;
 	}
 
+	@Override
+	public SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, String articleId, int status, String locale)
+		throws Exception {
+
+		return getSkinnyJournalArticle(
+			journalArticleService.getLatestArticle(groupId, articleId, status), locale);
+	}
+
+
+	@AccessControlled(guestAccessEnabled = true)
+	@Override
+	public SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, String articleId, String locale)
+		throws Exception {
+
+		JournalArticle journalArticle = journalArticleLocalService.
+			getLatestArticle(groupId, articleId, WorkflowConstants.STATUS_APPROVED);
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.hasPermission(
+			groupId, JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey(), ActionKeys.VIEW)) {
+
+			String msg = String.format("No JournalArticle exists with the key " +
+					"{groupId=%d, articleId=%s, status=%d}",
+				groupId, articleId, WorkflowConstants.STATUS_APPROVED);
+			throw new NoSuchArticleException(msg);
+		}
+
+		return getSkinnyJournalArticle(journalArticle, locale);
+	}
+
 	@AccessControlled(guestAccessEnabled = true)
 	@Override
 	public List<SkinnyJournalArticle> getSkinnyJournalArticles(
