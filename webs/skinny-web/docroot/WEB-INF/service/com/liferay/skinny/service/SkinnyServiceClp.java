@@ -36,9 +36,21 @@ public class SkinnyServiceClp implements SkinnyService {
 
 		_methodParameterTypes3 = new String[] { "long" };
 
-		_methodName4 = "getSkinnyJournalArticles";
+		_methodName4 = "getSkinnyJournalArticle";
 
 		_methodParameterTypes4 = new String[] {
+				"long", "java.lang.String", "int", "java.lang.String"
+			};
+
+		_methodName5 = "getSkinnyJournalArticle";
+
+		_methodParameterTypes5 = new String[] {
+				"long", "java.lang.String", "java.lang.String"
+			};
+
+		_methodName6 = "getSkinnyJournalArticles";
+
+		_methodParameterTypes6 = new String[] {
 				"long", "java.lang.String", "long", "java.lang.String"
 			};
 	}
@@ -122,14 +134,88 @@ public class SkinnyServiceClp implements SkinnyService {
 	}
 
 	@Override
-	public java.util.List<com.liferay.skinny.model.SkinnyJournalArticle> getSkinnyJournalArticles(
-		long companyId, java.lang.String groupName, long ddmStructureId,
+	public com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, int status,
 		java.lang.String locale) throws java.lang.Exception {
 		Object returnObj = null;
 
 		try {
 			returnObj = _invokableService.invokeMethod(_methodName4,
 					_methodParameterTypes4,
+					new Object[] {
+						groupId,
+						
+					ClpSerializer.translateInput(articleId),
+						
+					status,
+						
+					ClpSerializer.translateInput(locale)
+					});
+		}
+		catch (Throwable t) {
+			t = ClpSerializer.translateThrowable(t);
+
+			if (t instanceof java.lang.Exception) {
+				throw (java.lang.Exception)t;
+			}
+
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException)t;
+			}
+			else {
+				throw new RuntimeException(t.getClass().getName() +
+					" is not a valid exception");
+			}
+		}
+
+		return (com.liferay.skinny.model.SkinnyJournalArticle)ClpSerializer.translateOutput(returnObj);
+	}
+
+	@Override
+	public com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, java.lang.String locale)
+		throws java.lang.Exception {
+		Object returnObj = null;
+
+		try {
+			returnObj = _invokableService.invokeMethod(_methodName5,
+					_methodParameterTypes5,
+					new Object[] {
+						groupId,
+						
+					ClpSerializer.translateInput(articleId),
+						
+					ClpSerializer.translateInput(locale)
+					});
+		}
+		catch (Throwable t) {
+			t = ClpSerializer.translateThrowable(t);
+
+			if (t instanceof java.lang.Exception) {
+				throw (java.lang.Exception)t;
+			}
+
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException)t;
+			}
+			else {
+				throw new RuntimeException(t.getClass().getName() +
+					" is not a valid exception");
+			}
+		}
+
+		return (com.liferay.skinny.model.SkinnyJournalArticle)ClpSerializer.translateOutput(returnObj);
+	}
+
+	@Override
+	public java.util.List<com.liferay.skinny.model.SkinnyJournalArticle> getSkinnyJournalArticles(
+		long companyId, java.lang.String groupName, long ddmStructureId,
+		java.lang.String locale) throws java.lang.Exception {
+		Object returnObj = null;
+
+		try {
+			returnObj = _invokableService.invokeMethod(_methodName6,
+					_methodParameterTypes6,
 					new Object[] {
 						companyId,
 						
@@ -168,4 +254,8 @@ public class SkinnyServiceClp implements SkinnyService {
 	private String[] _methodParameterTypes3;
 	private String _methodName4;
 	private String[] _methodParameterTypes4;
+	private String _methodName5;
+	private String[] _methodParameterTypes5;
+	private String _methodName6;
+	private String[] _methodParameterTypes6;
 }

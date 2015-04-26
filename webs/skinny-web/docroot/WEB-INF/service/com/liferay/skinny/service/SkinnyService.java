@@ -73,6 +73,17 @@ public interface SkinnyService extends BaseService, InvokableService {
 	public java.util.List<com.liferay.skinny.model.SkinnyDDLRecord> getSkinnyDDLRecords(
 		long ddlRecordSetId) throws java.lang.Exception;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, int status,
+		java.lang.String locale) throws java.lang.Exception;
+
+	@com.liferay.portal.security.ac.AccessControlled(guestAccessEnabled = true)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, java.lang.String locale)
+		throws java.lang.Exception;
+
 	@com.liferay.portal.security.ac.AccessControlled(guestAccessEnabled = true)
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.util.List<com.liferay.skinny.model.SkinnyJournalArticle> getSkinnyJournalArticles(

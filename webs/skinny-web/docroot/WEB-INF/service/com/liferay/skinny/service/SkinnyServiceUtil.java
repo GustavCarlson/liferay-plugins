@@ -68,6 +68,19 @@ public class SkinnyServiceUtil {
 		return getService().getSkinnyDDLRecords(ddlRecordSetId);
 	}
 
+	public static com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, int status,
+		java.lang.String locale) throws java.lang.Exception {
+		return getService()
+				   .getSkinnyJournalArticle(groupId, articleId, status, locale);
+	}
+
+	public static com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, java.lang.String locale)
+		throws java.lang.Exception {
+		return getService().getSkinnyJournalArticle(groupId, articleId, locale);
+	}
+
 	public static java.util.List<com.liferay.skinny.model.SkinnyJournalArticle> getSkinnyJournalArticles(
 		long companyId, java.lang.String groupName, long ddmStructureId,
 		java.lang.String locale) throws java.lang.Exception {

@@ -36,9 +36,21 @@ public class SkinnyServiceClpInvoker {
 
 		_methodParameterTypes42 = new String[] { "long" };
 
-		_methodName43 = "getSkinnyJournalArticles";
+		_methodName43 = "getSkinnyJournalArticle";
 
 		_methodParameterTypes43 = new String[] {
+				"long", "java.lang.String", "int", "java.lang.String"
+			};
+
+		_methodName44 = "getSkinnyJournalArticle";
+
+		_methodParameterTypes44 = new String[] {
+				"long", "java.lang.String", "java.lang.String"
+			};
+
+		_methodName45 = "getSkinnyJournalArticles";
+
+		_methodParameterTypes45 = new String[] {
 				"long", "java.lang.String", "long", "java.lang.String"
 			};
 	}
@@ -64,6 +76,20 @@ public class SkinnyServiceClpInvoker {
 
 		if (_methodName43.equals(name) &&
 				Arrays.deepEquals(_methodParameterTypes43, parameterTypes)) {
+			return SkinnyServiceUtil.getSkinnyJournalArticle(((Long)arguments[0]).longValue(),
+				(java.lang.String)arguments[1],
+				((Integer)arguments[2]).intValue(),
+				(java.lang.String)arguments[3]);
+		}
+
+		if (_methodName44.equals(name) &&
+				Arrays.deepEquals(_methodParameterTypes44, parameterTypes)) {
+			return SkinnyServiceUtil.getSkinnyJournalArticle(((Long)arguments[0]).longValue(),
+				(java.lang.String)arguments[1], (java.lang.String)arguments[2]);
+		}
+
+		if (_methodName45.equals(name) &&
+				Arrays.deepEquals(_methodParameterTypes45, parameterTypes)) {
 			return SkinnyServiceUtil.getSkinnyJournalArticles(((Long)arguments[0]).longValue(),
 				(java.lang.String)arguments[1],
 				((Long)arguments[2]).longValue(), (java.lang.String)arguments[3]);
@@ -80,4 +106,8 @@ public class SkinnyServiceClpInvoker {
 	private String[] _methodParameterTypes42;
 	private String _methodName43;
 	private String[] _methodParameterTypes43;
+	private String _methodName44;
+	private String[] _methodParameterTypes44;
+	private String _methodName45;
+	private String[] _methodParameterTypes45;
 }

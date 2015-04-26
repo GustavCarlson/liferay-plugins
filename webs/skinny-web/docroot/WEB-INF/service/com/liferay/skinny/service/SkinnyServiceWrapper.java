@@ -63,6 +63,21 @@ public class SkinnyServiceWrapper implements SkinnyService,
 	}
 
 	@Override
+	public com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, int status,
+		java.lang.String locale) throws java.lang.Exception {
+		return _skinnyService.getSkinnyJournalArticle(groupId, articleId,
+			status, locale);
+	}
+
+	@Override
+	public com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, java.lang.String locale)
+		throws java.lang.Exception {
+		return _skinnyService.getSkinnyJournalArticle(groupId, articleId, locale);
+	}
+
+	@Override
 	public java.util.List<com.liferay.skinny.model.SkinnyJournalArticle> getSkinnyJournalArticles(
 		long companyId, java.lang.String groupName, long ddmStructureId,
 		java.lang.String locale) throws java.lang.Exception {

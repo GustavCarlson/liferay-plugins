@@ -66,6 +66,38 @@ public class SkinnyServiceSoap {
 		}
 	}
 
+	public static com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, int status,
+		java.lang.String locale) throws RemoteException {
+		try {
+			com.liferay.skinny.model.SkinnyJournalArticle returnValue = SkinnyServiceUtil.getSkinnyJournalArticle(groupId,
+					articleId, status, locale);
+
+			return returnValue;
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	public static com.liferay.skinny.model.SkinnyJournalArticle getSkinnyJournalArticle(
+		long groupId, java.lang.String articleId, java.lang.String locale)
+		throws RemoteException {
+		try {
+			com.liferay.skinny.model.SkinnyJournalArticle returnValue = SkinnyServiceUtil.getSkinnyJournalArticle(groupId,
+					articleId, locale);
+
+			return returnValue;
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
 	public static com.liferay.skinny.model.SkinnyJournalArticle[] getSkinnyJournalArticles(
 		long companyId, java.lang.String groupName, long ddmStructureId,
 		java.lang.String locale) throws RemoteException {
